@@ -1,6 +1,21 @@
-// I want to be able to hear the music and see what happens. 
 
-// How sensitive is the MIDI input?
+var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+// create Oscillator node
+var oscillator = audioCtx.createOscillator();
+
+oscillator.type = 'sine';
+oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // value in hertz
+oscillator.connect(audioCtx.destination);
+// oscillator.start();
+
+//When I push down a key, turn on the oscillator.
+//When the key is lifted, create a new oscillator. 
+
+function _mtof(note) {
+    return 440 * Math.pow(2, (note - 69) / 12);
+}
+
 function _onmidimessage(e) {
     /**
     * e.data is an array
@@ -10,17 +25,24 @@ function _onmidimessage(e) {
     */
     switch (e.data[0]) {
         case 144:
-            console.log(e.data[2]);
+            // Play the note: 
+            oscillator.frequency.setValueAtTime(_mtof(e.data[1]), audioCtx.currentTime); // value in hertz
+            oscillator.start(); 
+            console.log(e);
             break;
         case 128:
-            // console.log(e.data[2]);
+            console.log(e);
+            oscillator.stop();
+            oscillator = audioCtx.createOscillator();
+
+            oscillator.type = 'sine';
+            oscillator.connect(audioCtx.destination);
             break;
     }
 
 }
-
-let access;
+let device;
 window.navigator.requestMIDIAccess().then(access => {
-    let input = access.inputs.values().next().value;
-    input.onmidimessage = _onmidimessage;
+    device = access.inputs.values().next().value;
+    device.onmidimessage = _onmidimessage;
 });
