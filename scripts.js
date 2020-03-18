@@ -1,9 +1,14 @@
 
+document.querySelector('button').addEventListener('click',() => {
+
 var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 // create Oscillator node
-var oscillator = audioCtx.createOscillator();
-oscillator.type = 'sine';
+var keys = new Array(88).fill(() => audioCtx.createOscillator());
+keys = keys.map(f => f());
+
+// var oscillator = audioCtx.createOscillator();
+// oscillator.type = 'sine';
 
 //When I push down a key, turn on the oscillator.
 //When the key is lifted, create a new oscillator. 
@@ -22,22 +27,30 @@ function _onmidimessage(e) {
     switch (e.data[0]) {
         case 144:
             // Play the note: 
-            oscillator.frequency.value = _mtof(e.data[1]); // value in hertz
-            oscillator.connect(audioCtx.destination);
-            oscillator.start(); 
+            note = keys[e.data[1] - 21];
+            note.frequency.value = _mtof(e.data[1]); // value in hertz
+            note.connect(audioCtx.destination);
+            note.start(); 
             console.log(e);
             break;
         case 128:
             console.log(e);
-            oscillator.stop();
-            oscillator = audioCtx.createOscillator();
-            oscillator.type = 'sine';
+            note = keys[e.data[1]-21];
+            note.stop();
+            keys[e.data[1] - 21] = audioCtx.createOscillator();
+            // oscillator.type = 'sine';
             break;
     }
 
 }
+
+// Just do this now. 
+
+// console.log(e);
 let device;
 window.navigator.requestMIDIAccess().then(access => {
     device = access.inputs.values().next().value;
     device.onmidimessage = _onmidimessage;
+});
+
 });
