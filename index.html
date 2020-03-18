@@ -2,45 +2,52 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
-    <title>Oscillator</title>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link rel="icon" type="image/png" sizes="174x174" href="./favicon.png">
-
-    <script src="https://unpkg.com/@webcomponents/webcomponentsjs@^2/webcomponents-bundle.js"></script>
-    <script src="https://unpkg.com/tone@13.8.25/build/Tone.js"></script>
-    <style type="text/css">
-        tone-play-toggle {
-            margin-bottom: 10px;
-        }
-    </style>
     <script>
-                // I want to be able to hear the music and see what happens. 
 
-                    // How sensitive is the MIDI input?
-                    function _onmidimessage(e) {
-                        /**
-                        * e.data is an array
-                        * e.data[0] = on (144) / off (128) / detune (224)
-                        * e.data[1] = midi note
-                        * e.data[2] = velocity || detune
-                        */
-                        switch (e.data[0]) {
-                            case 144:
-                                console.log(e);
-                                break;
-                            case 128:
-                                console.log(e);
-                                break;
-                        }
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-                    }
+    // create Oscillator node
+    var oscillator = audioCtx.createOscillator();
+    oscillator.type = 'sine';
 
-                    window.navigator.requestMIDIAccess().then(access => {
-                        let device = access.inputs.values().next().value;
-                        device.onmidimessage = _onmidimessage;
-                    });
+    //When I push down a key, turn on the oscillator.
+    //When the key is lifted, create a new oscillator. 
+
+    function _mtof(note) {
+        return 440 * Math.pow(2, (note - 69) / 12);
+    }
+
+    function _onmidimessage(e) {
+        /**
+        * e.data is an array
+        * e.data[0] = on (144) / off (128) / detune (224)
+        * e.data[1] = midi note
+        * e.data[2] = velocity || detune
+        */
+        switch (e.data[0]) {
+            case 144:
+                // Play the note: 
+                oscillator.frequency.value = _mtof(e.data[1]); // value in hertz
+                oscillator.connect(audioCtx.destination);
+                oscillator.start();
+                console.log(e);
+                break;
+            case 128:
+                console.log(e);
+                oscillator.stop();
+                oscillator = audioCtx.createOscillator();
+                oscillator.type = 'sine';
+                break;
+        }
+
+    }
+    let device;
+    window.navigator.requestMIDIAccess().then(access => {
+        device = access.inputs.values().next().value;
+        device.onmidimessage = _onmidimessage;
+    });
+
     </script>
 
 </head>
