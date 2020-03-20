@@ -1,8 +1,24 @@
-const express = require('express')
-const app = express()
-const port = 3000
+const express = require('express');
+const port = 3000;
 
-app.use(express.static('public'))
-app.get('/', (req, res) => res.send('Hello World!'))
+const WebSocket = require('ws');
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`))
+const server = express().use(express.static('public'))
+    .listen(port, () => {
+        console.log(`Example app listening on port ${port}!`)
+    });
+
+const wss = new WebSocket.Server({ server });
+
+wss.on('connection', function connection(ws) {
+    console.log(ws);
+    ws.on('message', function incoming(message) {
+        console.log('received message: %s', message);
+        wss.clients.forEach(function each(client) {
+            if (client !== ws && client.readyState === WebSocket.OPEN) {
+                client.send(message);
+            }
+        });
+
+    });
+});

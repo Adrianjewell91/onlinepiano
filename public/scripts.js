@@ -1,5 +1,109 @@
+var HOST = location.origin.replace(/^http/, 'ws')
+var websocket = new WebSocket(HOST); 
 
-document.querySelector('button').addEventListener('click', () => {
+websocket.onmessage = function (event) {
+    console.log(event);
+}
+
+console.log(websocket);
+
+document.querySelector('#play').addEventListener('click', () => {
+
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    var keys = new Array(88).fill(() => audioCtx.createOscillator());
+    keys = keys.map(f => f());
+
+    function _mtof(note) {
+        return 440 * Math.pow(2, (note - 69) / 12);
+    }
+
+    function _onmidimessage(e) {
+        /**
+        * e.data is an array
+        * e.data[0] = on (144) / off (128) / detune (224)
+        * e.data[1] = midi note
+        * e.data[2] = velocity || detune
+        */
+        switch (e.data[0]) {
+            case 144:
+                // Play the note: 
+                websocket.send(JSON.stringify(e.data));
+                var gainNode = audioCtx.createGain();
+                note = keys[e.data[1] - 21];
+                note.frequency.value = _mtof(e.data[1]); // value in hertz
+                note.connect(gainNode); 
+                gainNode.gain.setValueAtTime(e.data[2] / 100, audioCtx.currentTime);
+                gainNode.connect(audioCtx.destination);
+                note.start(); 
+                console.log(e);
+                break;
+            case 128:
+                console.log(e);
+                websocket.send(JSON.stringify(e.data));
+                note = keys[e.data[1]-21];
+                note.stop();
+                keys[e.data[1] - 21] = audioCtx.createOscillator();
+                break;
+        }
+    }
+
+    let device;
+    window.navigator.requestMIDIAccess().then(access => {
+        device = access.inputs.values().next().value;
+        device.onmidimessage = _onmidimessage;
+    });
+});
+
+document.querySelector('#listen').addEventListener('click', () => {
+
+    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    var keys = new Array(88).fill(() => audioCtx.createOscillator());
+    keys = keys.map(f => f());
+
+    function _mtof(note) {
+        return 440 * Math.pow(2, (note - 69) / 12);
+    }
+
+    function _onmidimessage(e) {
+        /**
+        * e.data is an array
+        * e.data[0] = on (144) / off (128) / detune (224)
+        * e.data[1] = midi note
+        * e.data[2] = velocity || detune
+        */
+        switch (e.data[0]) {
+            case 144:
+                // Play the note: 
+                websocket.send(JSON.stringify(e.data));
+                var gainNode = audioCtx.createGain();
+                note = keys[e.data[1] - 21];
+                note.frequency.value = _mtof(e.data[1]); // value in hertz
+                note.connect(gainNode);
+                gainNode.gain.setValueAtTime(e.data[2] / 100, audioCtx.currentTime);
+                gainNode.connect(audioCtx.destination);
+                note.start();
+                console.log(e);
+                break;
+            case 128:
+                console.log(e);
+                websocket.send(JSON.stringify(e.data));
+                note = keys[e.data[1] - 21];
+                note.stop();
+                keys[e.data[1] - 21] = audioCtx.createOscillator();
+                break;
+        }
+    }
+
+    websocket.onmessage = function (event) {
+        console.log(event);
+        payload = {
+            data: JSON.parse(event.data)
+        }
+        _onmidimessage(payload);
+    };
+});
 
     // var piano = Synth.createInstrument('piano');
     // var map = {
@@ -92,65 +196,3 @@ document.querySelector('button').addEventListener('click', () => {
     //     107: ["B", 8], 
     //     108: ["C", 8]
     // }
-
-    var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-
-    // create Oscillator node
-    var keys = new Array(88).fill(() => audioCtx.createOscillator());
-    keys = keys.map(f => f());
-
-    // var oscillator = audioCtx.createOscillator();
-    // oscillator.type = 'sine';
-
-    //When I push down a key, turn on the oscillator.
-    //When the key is lifted, create a new oscillator. 
-
-    function _mtof(note) {
-        return 440 * Math.pow(2, (note - 69) / 12);
-    }
-
-    function _onmidimessage(e) {
-        /**
-        * e.data is an array
-        * e.data[0] = on (144) / off (128) / detune (224)
-        * e.data[1] = midi note
-        * e.data[2] = velocity || detune
-        */
-        switch (e.data[0]) {
-            case 144:
-                // Play the note: 
-                var gainNode = audioCtx.createGain();
-                note = keys[e.data[1] - 21];
-                note.frequency.value = _mtof(e.data[1]); // value in hertz
-                note.connect(gainNode); 
-                gainNode.gain.setValueAtTime(e.data[2] / 100, audioCtx.currentTime);
-                gainNode.connect(audioCtx.destination);
-                // note.connect(audioCtx.destination);
-                note.start(); 
-                // data = map[e.data[1]];
-                // piano.play(data[0], data[1], 2);
-                // piano.play('C', 4, 2);
-                console.log(e);
-                break;
-            case 128:
-                console.log(e);
-                note = keys[e.data[1]-21];
-                note.stop();
-                keys[e.data[1] - 21] = audioCtx.createOscillator();
-                // oscillator.type = 'sine';
-                break;
-        }
-
-    }
-
-    // Just do this now. 
-
-    // console.log(e);
-    let device;
-    window.navigator.requestMIDIAccess().then(access => {
-        device = access.inputs.values().next().value;
-        device.onmidimessage = _onmidimessage;
-    });
-
-});
