@@ -1,5 +1,5 @@
-var HOST = location.origin.replace(/^http/, 'ws')
-var websocket = new WebSocket(HOST); 
+var HOST = location.origin.replace(/^http/, 'ws');
+var websocket = new WebSocket(HOST);
 
 websocket.onmessage = function (event) {
     console.log(event);
@@ -10,13 +10,22 @@ console.log(websocket);
 document.querySelector('#play').addEventListener('click', () => {
 
     var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    var keys = new Array(88).fill(() => audioCtx.createOscillator());
-    keys = keys.map(f => f());
-
     function _mtof(note) {
         return 440 * Math.pow(2, (note - 69) / 12);
     }
+
+    var keys = new Array(88).fill((idx) => {
+        var oscillator = audioCtx.createOscillator()
+        var gainNode = audioCtx.createGain();
+        oscillator.frequency.value = _mtof(idx);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        oscillator.start();
+        return gainNode;
+    });
+
+    keys = keys.map((f, idx) => f(idx + 21));
 
     function _onmidimessage(e) {
         /**
@@ -29,21 +38,22 @@ document.querySelector('#play').addEventListener('click', () => {
             case 144:
                 // Play the note: 
                 websocket.send(JSON.stringify(e.data));
-                var gainNode = audioCtx.createGain();
+                // var gainNode = audioCtx.createGain();
                 note = keys[e.data[1] - 21];
-                note.frequency.value = _mtof(e.data[1]); // value in hertz
-                note.connect(gainNode); 
-                gainNode.gain.setValueAtTime(e.data[2] / 100, audioCtx.currentTime);
-                gainNode.connect(audioCtx.destination);
-                note.start(); 
+                // note.frequency.value = _mtof(e.data[1]); // value in hertz
+                // note.connect(gainNode); 
+                note.gain.setValueAtTime(e.data[2] / 100, audioCtx.currentTime);
+                // gainNode.connect(audioCtx.destination);
+                // note.start(); 
                 console.log(e);
                 break;
             case 128:
                 console.log(e);
                 websocket.send(JSON.stringify(e.data));
-                note = keys[e.data[1]-21];
-                note.stop();
-                keys[e.data[1] - 21] = audioCtx.createOscillator();
+                note = keys[e.data[1] - 21];
+                // note.stop();
+                note.gain.setValueAtTime(0, audioCtx.currentTime);
+                // keys[e.data[1] - 21] = audioCtx.createOscillator();
                 break;
         }
     }
@@ -56,15 +66,23 @@ document.querySelector('#play').addEventListener('click', () => {
 });
 
 document.querySelector('#listen').addEventListener('click', () => {
-
     var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-    var keys = new Array(88).fill(() => audioCtx.createOscillator());
-    keys = keys.map(f => f());
-
     function _mtof(note) {
         return 440 * Math.pow(2, (note - 69) / 12);
     }
+
+    var keys = new Array(88).fill((idx) => {
+        var oscillator = audioCtx.createOscillator()
+        var gainNode = audioCtx.createGain();
+        oscillator.frequency.value = _mtof(idx);
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+        oscillator.start();
+        return gainNode;
+    });
+
+    keys = keys.map((f, idx) => f(idx + 21));
 
     function _onmidimessage(e) {
         /**
@@ -77,21 +95,22 @@ document.querySelector('#listen').addEventListener('click', () => {
             case 144:
                 // Play the note: 
                 websocket.send(JSON.stringify(e.data));
-                var gainNode = audioCtx.createGain();
+                // var gainNode = audioCtx.createGain();
                 note = keys[e.data[1] - 21];
-                note.frequency.value = _mtof(e.data[1]); // value in hertz
-                note.connect(gainNode);
-                gainNode.gain.setValueAtTime(e.data[2] / 100, audioCtx.currentTime);
-                gainNode.connect(audioCtx.destination);
-                note.start();
+                // note.frequency.value = _mtof(e.data[1]); // value in hertz
+                // note.connect(gainNode); 
+                note.gain.setValueAtTime((e.data[2]-20) / 100, audioCtx.currentTime);
+                // gainNode.connect(audioCtx.destination);
+                // note.start(); 
                 console.log(e);
                 break;
             case 128:
                 console.log(e);
                 websocket.send(JSON.stringify(e.data));
                 note = keys[e.data[1] - 21];
-                note.stop();
-                keys[e.data[1] - 21] = audioCtx.createOscillator();
+                // note.stop();
+                note.gain.setValueAtTime(0, audioCtx.currentTime);
+                // keys[e.data[1] - 21] = audioCtx.createOscillator();
                 break;
         }
     }
