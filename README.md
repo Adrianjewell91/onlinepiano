@@ -10,7 +10,7 @@ Add a visual keyboard:
 
 Make the keyboard have no lag at all: do this by using timing synchronization.		
 		- pass the event but also the time of the event,
-		- this sounds interesting. 
+		- this sounds interesting, but will it work in  real time?
 
 Users can spin up a new session
 		0. Home page with a button that says “start a new session”:
